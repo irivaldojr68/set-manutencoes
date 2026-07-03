@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+:root {
+  --roxo: #7B2FBE;
+  --roxo-dark: #5b1f9e;
+  --roxo-light: #f5f3ff;
+  --green: #059669;
+  --red: #dc2626;
+  --yellow: #d97706;
+  --text: #1e293b;
+  --muted: #64748b;
+  --border: #e2e8f0;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f8fafc; color: var(--text); }

@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard HE — ALBRÁS Manutenção</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --roxo:#7B2FBE;--roxo-d:#4a0080;--roxo-l:#f3e8ff;--roxo-m:#c084fc;
+  --bg:#f0edf5;--card:#fff;--border:#ddd8e8;--text:#1a1a2e;--muted:#6b7280;
+  --green:#059669;--yellow:#d97706;--red:#dc2626;--orange:#ea580c;
+  --green-bg:#d1fae5;--yellow-bg:#fef3c7;--red-bg:#fee2e2;--orange-bg:#ffedd5;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Barlow',sans-serif;min-height:100vh}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#4a0080,#7B2FBE,#5b1f9e);padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden;gap:12px}
+.header::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(-55deg,transparent,transparent 40px,rgba(255,255,255,0.03) 40px,rgba(255,255,255,0.03) 41px)}
+.hleft{display:flex;align-items:center;gap:14px;z-index:1;min-width:0}
+.hlogo{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:6px;padding:6px 12px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#fff;flex-shrink:0}
+.htitle h1{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;letter-spacing:1px;white-space:nowrap}
+.htitle p{font-size:11px;color:rgba(255,255,255,0.65);margin-top:2px}
+.hright{z-index:1;text-align:right;flex-shrink:0}
+.hbadge{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:20px;padding:4px 12px;font-size:11px;color:#fff;margin-top:5px;display:inline-block}
+.hdate{font-size:11px;color:rgba(255,255,255,0.6);font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase}
+
+/* CONFIG BANNER (Google Sheets) */
+.cfg-bar{background:#fff;border-bottom:2px solid var(--border);padding:10px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.cfg-btn{padding:8px 20px;background:var(--roxo);color:#fff;border:none;border-radius:8px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.15s;display:flex;align-items:center;gap:6px}
+.cfg-btn:hover{background:var(--roxo-d)}
+.cfg-btn:disabled{opacity:.6;cursor:not-allowed}
+.cfg-status{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500}
+.cfg-ok{background:var(--green-bg);color:#065f46}
+.cfg-err{background:var(--red-bg);color:#991b1b}
+.cfg-loading{background:var(--yellow-bg);color:#92400e}
+
+/* FILTROS */
+.fbar{background:#fff;border-bottom:1px solid var(--border);padding:10px 24px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.flbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:500;margin-right:4px;white-space:nowrap}
+.fbtn{padding:5px 13px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-family:'Barlow',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;white-space:nowrap}
+.fbtn:hover{border-color:var(--roxo);color:var(--roxo)}
+.fbtn.on{background:var(--roxo);border-color:var(--roxo);color:#fff}
+.fsel{padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-family:'Barlow',sans-serif;font-size:12px;color:var(--muted);cursor:pointer;outline:none}
+.fsel:focus{border-color:var(--roxo)}
+
+/* MAIN */
+.wrap{max-width:1280px;margin:0 auto;padding:20px 20px 60px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.g1{margin-bottom:18px}
+
+/* KPIs */
+.kpi{border-radius:10px;padding:18px;position:relative;overflow:hidden}
+.kpi-roxo{background:linear-gradient(135deg,#4a0080,#7B2FBE)}
+.kpi-green{background:linear-gradient(135deg,#065f46,#059669)}
+.kpi-yellow{background:linear-gradient(135deg,#92400e,#d97706)}
+.kpi-red{background:linear-gradient(135deg,#991b1b,#dc2626)}
+.kpi-orange{background:linear-gradient(135deg,#7c2d12,#ea580c)}
+.kpi::after{content:'';position:absolute;right:-16px;top:-16px;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.08)}
+.kpi-lbl{font-size:11px;font-weight:500;opacity:.8;text-transform:uppercase;letter-spacing:.5px;color:#fff;margin-bottom:6px}
+.kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:800;line-height:1;color:#fff}
+.kpi-sub{font-size:11px;opacity:.65;margin-top:5px;color:#fff}
+.kpi-limit{font-size:10px;opacity:.5;margin-top:2px;color:#fff}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.ctitle{font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctitle::before{content:'';width:3px;height:13px;background:var(--roxo);border-radius:2px;display:block;flex-shrink:0}
+.ctitle-note{font-size:10px;color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0}
+
+/* ALERTA ESTOURO */
+.alerta-grid{display:grid;gap:8px}
+.alerta-item{display:flex;align-items:center;gap:10px;background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;flex-wrap:wrap}
+.alerta-item.warn{background:#fffbeb;border-color:#fde68a}
+.alerta-func{font-size:13px;font-weight:600;color:var(--text);min-width:120px}
+.alerta-he{font-size:12px;color:var(--muted);flex:1}
+.alerta-val{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800}
+.alerta-val.over{color:var(--red)}
+.alerta-val.warn{color:var(--yellow)}
+.alerta-bar-wrap{width:100%;height:6px;background:#f3f0f8;border-radius:3px;overflow:hidden;margin-top:4px}
+.alerta-bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* GAUGE ESTOURO */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0}
+.gauge-num{font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:800;line-height:1}
+.gauge-lbl{font-size:11px;color:var(--muted)}
+
+/* TABELA PRINCIPAL */
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:650px}
+thead th{padding:9px 10px;text-align:left;font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--roxo)}
+thead th.sorted{color:var(--roxo)}
+thead th .sort-arrow{margin-left:4px;opacity:.5}
+thead th.sorted .sort-arrow{opacity:1}
+tbody td{padding:9px 10px;border-bottom:1px solid #f5f3fa;color:var(--text);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#faf8ff}
+tbody tr.row-over td{background:#fff5f5}
+tbody tr.row-warn td{background:#fffbeb}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.b-green{background:var(--green-bg);color:#065f46}
+.b-yellow{background:var(--yellow-bg);color:#92400e}
+.b-red{background:var(--red-bg);color:#991b1b}
+.b-orange{background:var(--orange-bg);color:#7c2d12}
+.b-muted{background:#f3f0f8;color:var(--muted)}
+
+/* MINI BARRA */
+.sbw{width:70px;background:#f3f0f8;border-radius:3px;height:6px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
+.sb{height:100%;border-radius:3px;display:block}
+.sb-g{background:var(--green)}.sb-y{background:var(--yellow)}.sb-r{background:var(--red)}.sb-o{background:var(--orange)}
+
+/* RANKING HE */
+.rank-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #f5f3fa}
+.rank-item:last-child{border-bottom:none}
+.rank-n{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;color:#ddd8e8;min-width:24px}
+.rank-n.over{color:var(--red)}
+.rank-n.warn{color:var(--yellow)}
+.rank-n.ok{color:var(--green)}
+.rank-info{flex:1;min-width:0}
+.rank-nome{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-func{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-he{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;white-space:nowrap}
+
+/* PERFIL COLABORADOR */
+.perfil-card{background:linear-gradient(135deg,#4a0080,#7B2FBE);border-radius:10px;padding:20px;color:#fff;margin-bottom:18px;display:none}
+.perfil-card.on{display:block;animation:fi .3s ease}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.perfil-top{display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+.perfil-avatar{width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#fff;flex-shrink:0}
+.perfil-nome{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#fff}
+.perfil-sub{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px}
+.perfil-he-total{font-family:'Barlow Condensed',sans-serif;font-size:44px;font-weight:800;color:#fff;line-height:1;margin-left:auto}
+.perfil-he-lbl{font-size:11px;color:rgba(255,255,255,.65);text-align:right}
+.perfil-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+.perfil-stat{background:rgba(255,255,255,.12);border-radius:8px;padding:10px 12px}
+.perfil-stat-lbl{font-size:10px;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.perfil-stat-val{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#fff}
+.perfil-stat-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px}
+.perfil-dias{margin-top:12px}
+.perfil-dias-title{font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.perfil-dias-list{display:flex;gap:4px;flex-wrap:wrap}
+.dia-chip{font-size:10px;padding:3px 8px;border-radius:12px;background:rgba(255,255,255,.15);color:#fff;font-weight:500}
+.dia-chip.he{background:rgba(220,38,38,.4)}
+.dia-chip.fn{background:rgba(5,150,105,.25)}
+
+/* TIMELINE/CALENDÁRIO MINI */
+.cal-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-header{font-size:9px;text-align:center;color:var(--muted);font-weight:600;text-transform:uppercase;padding:2px 0}
+.cal-day{height:32px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer;transition:.1s;position:relative}
+.cal-day:hover{opacity:.8}
+.cal-day.empty{background:transparent}
+.cal-day.normal{background:#bbf7d0;color:#14532d;font-weight:700}
+.cal-day.he{background:#fde68a;color:#78350f;font-weight:700}
+.cal-day.he-over{background:#d1d5db;color:#374151;font-weight:800}
+.cal-day.falta{background:#fca5a5;color:#7f1d1d;font-weight:600}
+.cal-day.fds{background:#ede9fe;color:#5b21b6;font-weight:600}
+.cal-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:14px;font-weight:600;margin-bottom:6px;color:var(--text)}
+.empty-desc{font-size:12px;line-height:1.6}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:#1a1a2e;color:#fff;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transform:translateY(10px);transition:.3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .g4{grid-template-columns:1fr 1fr}
+  .g21,.g2,.g3{grid-template-columns:1fr}
+  .wrap{padding:14px 12px 48px}
+  .fbar{padding:8px 12px}
+  .cfg-bar{padding:8px 12px}
+  .header{padding:12px}
+  .htitle h1{font-size:15px}
+  .perfil-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:500px){
+  .g4{grid-template-columns:1fr}
+  .kpi-val{font-size:32px}
+  .perfil-he-total{font-size:34px}
+  .perfil-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="hleft">
+    <div class="hlogo">SET</div>
+    <div class="htitle">
+      <h1>CONTROLE DE EFETIVO — SET MANUTENÇÕES</h1>
+      
+    </div>
+  </div>
+  <div class="hright">
+    <div class="hdate" id="hdate"></div>
+    <div class="hbadge" id="hbadge">Sem dados</div>
+  </div>
+</div>
+
+<!-- BARRA ATUALIZAR -->
+<div class="cfg-bar">
+  <button class="cfg-btn" onclick="carregarSheets()" id="btn-atualizar">
+    🔄 Atualizar Dados
+  </button>
+  <span class="cfg-status" id="cfg-status" style="display:none"></span>
+  <span style="font-size:11px;color:var(--muted);margin-left:4px" id="cfg-ultima">Selecione o arquivo .xlsx exportado do sistema — os dados aparecerão automaticamente</span>
+</div>
+
+<!-- FILTROS -->
+<div class="fbar">
+  <span class="flbl">Status HE:</span>
+  <button class="fbtn on" onclick="setFiltro('todos',this)" id="f-todos">Todos</button>
+  <button class="fbtn" onclick="setFiltro('over',this)" id="f-over">Estourou (>40h)</button>
+  <button class="fbtn" onclick="setFiltro('warn',this)" id="f-warn">Atenção (30–40h)</button>
+  <button class="fbtn" onclick="setFiltro('ok',this)" id="f-ok">Dentro do limite</button>
+  <span class="flbl" style="margin-left:12px">Colaborador:</span>
+  <select class="fsel" id="sel-colab" onchange="filtrarColab(this.value)">
+    <option value="">Todos</option>
+  </select>
+  <span class="flbl" style="margin-left:8px">De:</span>
+  <input type="date" class="fsel" id="filtro-de" onchange="renderTudo()" style="width:130px">
+  <span class="flbl">Até:</span>
+  <input type="date" class="fsel" id="filtro-ate" onchange="renderTudo()" style="width:130px">
+  <span class="flbl" style="margin-left:8px">Centro Custo:</span>
+  <select class="fsel" id="sel-cc" onchange="renderTudo()" style="min-width:160px">
+    <option value="">Todos</option>
+  </select>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="wrap">
+
+  <!-- PERFIL COLABORADOR -->
+  <div class="perfil-card" id="perfil-card">
+    <div class="perfil-top">
+      <div class="perfil-avatar" id="perfil-avatar">AB</div>
+      <div>
+        <div class="perfil-nome" id="perfil-nome">—</div>
+        <div class="perfil-sub" id="perfil-sub">—</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div class="perfil-he-total" id="perfil-he-total">0h</div>
+        <div class="perfil-he-lbl">total HE no período</div>
+        <div id="perfil-status-badge" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="perfil-grid" id="perfil-grid"></div>
+    <div class="perfil-dias" id="perfil-dias"></div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="g4">
+    <div class="kpi kpi-roxo">
+      <div class="kpi-lbl">Funcionários</div>
+      <div class="kpi-val" id="k-total">—</div>
+      <div class="kpi-sub">no período</div>
+    </div>
+    <div class="kpi kpi-red">
+      <div class="kpi-lbl">Estouraram limite</div>
+      <div class="kpi-val" id="k-over">—</div>
+      <div class="kpi-sub">acima de 40h extras/mês</div>
+      <div class="kpi-limit">Limite: 40h/mês (CLT art. 59)</div>
+    </div>
+    <div class="kpi kpi-yellow">
+      <div class="kpi-lbl">Em atenção</div>
+      <div class="kpi-val" id="k-warn">—</div>
+      <div class="kpi-sub">entre 30h e 40h extras</div>
+    </div>
+    <div class="kpi kpi-green">
+      <div class="kpi-lbl">Total HE acumuladas</div>
+      <div class="kpi-val" id="k-total-he">—</div>
+      <div class="kpi-sub" id="k-total-he-sub">horas no período</div>
+    </div>
+  </div>
+
+  <!-- RANKING + CALENDÁRIO -->
+  <div class="g21">
+    <div class="card">
+      <div class="ctitle">Ranking de Horas Extras <span class="ctitle-note">(ordem decrescente)</span></div>
+      <div id="ranking-he"></div>
+    </div>
+    <div class="card">
+      <div class="ctitle">Efetivo por Função</div>
+      <div id="funcoes-painel"></div>
+    </div>
+  </div>
+
+  <!-- GRÁFICO BARRAS + DISTRIBUIÇÃO -->
+  <div class="g2">
+    <div class="card">
+      <div class="ctitle">HE por Funcionário</div>
+      <canvas id="chart-he" height="220"></canvas>
+    </div>
+    <div class="card">
+      <div class="ctitle">Distribuição por Tipo de HE</div>
+      <canvas id="chart-tipo" height="220"></canvas>
+    </div>
+  </div>
+
+  <!-- GRÁFICO PONTO ADIANTADO -->
+  <div class="card g1" style="margin-top:0">
+    <div class="ctitle">Ponto Adiantado — HE 65% entre 5 e 29 min <span class="ctitle-note">(dias por funcionário)</span></div>
+    <canvas id="chart-adiantado" height="120"></canvas>
+  </div>
+
+  <!-- TABELA DETALHADA -->
+  <div class="card g1">
+    <div class="ctitle">Apontamentos Individuais — Detalhes</div>
+    <div class="tw">
+      <table id="tabela-principal">
+        <thead>
+          <tr>
+            <th onclick="sortTabela('nome')">Colaborador <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('funcao')">Função <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('he65')">HE 65% <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('he100')">HE 100% <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('hen')">H.Noturna <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('total')">Total HE <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('saldo')">Saldo c/ limite <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTabela('faltas')">Faltas <span class="sort-arrow">↕</span></th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-principal"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- CALENDÁRIO POR FUNCIONÁRIO -->
+  <div class="card g1" id="card-cal" style="display:none">
+    <div class="ctitle" id="cal-title">Calendário de Marcações</div>
+    <div id="cal-content"></div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const DADOS_REAIS = {
+  "000269": {mat:"000269",nome:"IRIVALDO FERREIRA DA SILVA JUN",funcao:"TEC DE PLANEJ SR 2",he65:0,he100:0,headn:0,han:0,faltas:1076,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "000407": {mat:"000407",nome:"WASHINGTON LUIS MACHADO VIANA",funcao:"ENC DE MECANICA PL1",he65:953,he100:0,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:500,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:538,he65:63,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:425,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:85,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:533,he65:97,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:535,he65:44,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:528,he65:36,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:537,he65:60,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:526,he65:68,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "000429": {mat:"000429",nome:"MINEIA FERREIRA BARBOSA",funcao:"TEC SEG DO TRAB PL1",he65:879,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:433,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:449,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:446,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001798": {mat:"001798",nome:"ARTHUR DOS SANTOS VIANA",funcao:"LAVADOR",he65:0,he100:0,headn:0,han:0,faltas:0,atraso:81,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:523,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:359,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:518,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:20},{data:"21/05/2026",dia:"Quinta - Feira",hn:509,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:22},{data:"22/05/2026",dia:"Sexta - Feira",hn:504,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:16},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:527,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:502,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:23},{data:"28/05/2026",dia:"Quinta - Feira",hn:518,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:511,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001799": {mat:"001799",nome:"ARLEILSOM DARIO ALMEIDA",funcao:"MEC EQUIP/MAQ PESADA",he65:609,he100:339,headn:0,han:0,faltas:0,atraso:52,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:339,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:538,he65:55,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:57,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:538,he65:88,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:538,he65:81,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:485,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:52},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:532,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:328,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001800": {mat:"001800",nome:"AUGUSTO JUNIOR MORAIS CARDOSO",funcao:"MEC EQUIP/MAQ PESADA",he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:532,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001801": {mat:"001801",nome:"CARLOS ALBERTO ALVES DE OLIVEI",funcao:"MEC EQUIP/MAQ PESADA",he65:480,he100:0,headn:0,han:0,faltas:1076,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:352,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:513,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:527,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:523,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:524,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:480,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001804": {mat:"001804",nome:"ILQUIAS FARIAS E SILVA",funcao:"ELET EQ IND VEICULOS",he65:480,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:525,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:480,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001810": {mat:"001810",nome:"WILLIAMES BATISTA COUTINHO",funcao:"BORRACHEIRO",he65:122,he100:0,headn:0,han:1233,faltas:660,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:653,he65:21,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:629,he65:18,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:690,he65:11,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:660,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:648,he65:12,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:659,he65:13,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:687,he65:29,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:711,he65:18,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001820": {mat:"001820",nome:"JOAO DO SOCORRO DANTAS DA SILV",funcao:"MEC EQUIP/MAQ PESADA",he65:1231,he100:0,headn:247,han:0,faltas:538,atraso:103,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:465,he100:0,headn:106,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:435,he65:48,he100:0,headn:0,han:0,faltas:0,atraso:103},{data:"19/05/2026",dia:"Terca - Feira",hn:533,he65:108,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:531,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:479,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:538,he65:112,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:498,he100:0,headn:141,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001821": {mat:"001821",nome:"ATAILDES LOPES SERRAO",funcao:"LUBRIFICADOR",he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001823": {mat:"001823",nome:"ADRIANO DE SOUZA CARDOSO",funcao:"MEC EQUIP/MAQ PESADA",he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:527,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001824": {mat:"001824",nome:"BENEDITO ANTONIO AZEVEDO RODRI",funcao:"MEC EQUIP/MAQ PESADA",he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:532,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001828": {mat:"001828",nome:"RAIMUNDO NONATO RIBEIRO DA SIL",funcao:"MEC EQUIP/MAQ PESADA",he65:489,he100:0,headn:0,han:0,faltas:538,atraso:55,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:483,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:55},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:489,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001829": {mat:"001829",nome:"ROMERO VALERIO DE MACEDO",funcao:"ELET EQ IND VEICULOS",he65:29,he100:467,headn:0,han:0,faltas:1076,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:529,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:532,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:519,he65:18,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:467,headn:0,han:0,faltas:0,atraso:0}]},
+  "001876": {mat:"001876",nome:"MARCELO BARROSO REIMAO",funcao:"TEC DE PLANEJ JR 1",he65:836,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:538,he65:88,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:537,he65:106,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:642,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001890": {mat:"001890",nome:"JOSIEL FERREIRA DA SILVA",funcao:"ELET EQ IND VEICULOS",he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:538,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001984": {mat:"001984",nome:"JACKSON JOSE ESTUMANO SANTOS",funcao:"MEC EQUIP/MAQ PESADA",he65:0,he100:452,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:452,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001986": {mat:"001986",nome:"VANDO LIMA CARDOSO",funcao:"MEC EQUIP/MAQ PESADA",he65:15,he100:0,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:366,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:538,he65:15,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:502,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:412,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "001987": {mat:"001987",nome:"ANTONILDO ARAUJO BARBOSA",funcao:"MEC EQUIP/MAQ PESADA",he65:757,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:531,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:538,he65:114,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:538,he65:112,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002150": {mat:"002150",nome:"MARCOS DE JESUS FIGUEIREDO MAC",funcao:"SOLDADOR RX",he65:923,he100:0,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:477,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:446,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002155": {mat:"002155",nome:"JOAO CARLOS BRITO AMORIM",funcao:"BORRACHEIRO",he65:741,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:538,he65:53,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:53,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:527,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:517,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:635,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002211": {mat:"002211",nome:"THAIS DE JESUS BORRALHO",funcao:"LAVADOR",he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:330,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002313": {mat:"002313",nome:"MIKELY SENA TEIXEIRA",funcao:"TEC SEG DO TRAB",he65:102,he100:0,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:523,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:538,he65:49,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:537,he65:53,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002329": {mat:"002329",nome:"RENATO MATOS MARQUES NETO",funcao:"OP MANUTEN ELETROMEC",he65:673,he100:0,headn:443,han:1187,faltas:1076,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:488,he100:0,headn:346,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:538,he65:65,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:494,he65:0,he100:0,headn:0,han:354,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:561,he65:23,he100:0,headn:0,han:342,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:478,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:538,he65:23,he100:0,headn:23,han:57,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:481,he65:0,he100:0,headn:0,han:80,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:612,he65:74,he100:0,headn:74,han:354,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002364": {mat:"002364",nome:"JOSE FRANCISCO DA SILVA ALBERN",funcao:"BORRACHEIRO",he65:33,he100:0,headn:0,han:822,faltas:1320,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:711,he65:0,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:660,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:660,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:660,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:660,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:660,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:660,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:708,he65:0,he100:0,headn:0,han:411,faltas:0,atraso:0}]},
+  "002373": {mat:"002373",nome:"OZIAS AMARAL VAZ",funcao:"MEC EQUIP/MAQ PESADA",he65:0,he100:0,headn:0,han:870,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:519,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:516,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:518,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:516,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:529,he65:0,he100:0,headn:0,han:177,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:535,he65:0,he100:0,headn:0,han:170,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:527,he65:0,he100:0,headn:0,han:176,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:526,he65:0,he100:0,headn:0,han:171,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:526,he65:0,he100:0,headn:0,han:176,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002458": {mat:"002458",nome:"VALDENILSON RIBEIRO SOUZA",funcao:"ELET EQ IND VEICULOS",he65:119,he100:0,headn:0,han:0,faltas:538,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:534,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:538,he65:119,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002461": {mat:"002461",nome:"DAVID MATHEUS SARAIVA TEIXEIRA",funcao:"ELET EQ IND VEICULOS",he65:103,he100:0,headn:118,han:2957,faltas:480,atraso:52,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:522,he65:14,he100:0,headn:16,han:377,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:517,he65:18,he100:0,headn:21,han:377,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:521,he65:17,he100:0,headn:19,han:377,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:480,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:487,he65:0,he100:0,headn:0,han:345,faltas:0,atraso:28},{data:"26/05/2026",dia:"Terca - Feira",hn:497,he65:0,he100:0,headn:0,han:350,faltas:0,atraso:24},{data:"27/05/2026",dia:"Quarta - Feira",hn:525,he65:18,he100:0,headn:21,han:377,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:525,he65:19,he100:0,headn:22,han:377,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:503,he65:17,he100:0,headn:19,han:377,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002463": {mat:"002463",nome:"PAULO ROGERIO CORDEIRO DE LIMA",funcao:"MEC EQUIP/MAQ PESADA",he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002464": {mat:"002464",nome:"JOAO PAULO COSTA PEREIRA",funcao:"MEC EQUIP/MAQ PESADA",he65:132,he100:383,headn:0,han:0,faltas:538,atraso:55,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:383,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:523,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:527,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:531,he65:88,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:536,he65:44,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:483,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:55},{data:"26/05/2026",dia:"Terca - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:525,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:538,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:519,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002471": {mat:"002471",nome:"JOAO VITOR DE MORAES COELHO AR",funcao:"ELET EQ IND VEICULOS",he65:473,he100:0,headn:339,han:0,faltas:0,atraso:30,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:461,he100:0,headn:339,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:510,he65:12,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:505,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:30},{data:"27/05/2026",dia:"Quarta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:467,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002483": {mat:"002483",nome:"NIVALDO NASCIMENTO JUNIOR",funcao:"TORNEIRO",he65:706,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:484,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:538,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:536,he65:103,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:537,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:538,he65:119,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002499": {mat:"002499",nome:"ERNANI DURAO DA TRINDADE",funcao:"BORRACHEIRO",he65:39,he100:0,headn:0,han:1233,faltas:660,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:660,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:655,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:706,he65:13,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:660,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:657,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:657,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:702,he65:0,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:697,he65:15,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002528": {mat:"002528",nome:"GILVANDRO DA SILVA PATROCINIO",funcao:"BORRACHEIRO",he65:33,he100:0,headn:0,han:1644,faltas:1320,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:660,he65:18,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:711,he65:0,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:711,he65:0,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:660,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:660,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:711,he65:0,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:711,he65:15,he100:0,headn:0,han:411,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:660,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002539": {mat:"002539",nome:"LEANDRO SANTOS CARDOSO",funcao:"MEC EQUIP/MAQ PESADA",he65:1010,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:530,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:530,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:531,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:513,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:522,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:525,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:480,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002540": {mat:"002540",nome:"ANTONIO ERIC AMARAL GUERREIRO",funcao:"MEC EQUIP/MAQ PESADA",he65:547,he100:461,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:469,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:529,he65:11,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:532,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:533,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:519,he65:67,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:502,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:526,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:467,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:528,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:461,headn:0,han:0,faltas:0,atraso:0}]},
+  "002547": {mat:"002547",nome:"ELIELDI GONCALVES MIRANDA",funcao:"MEC EQUIP/MAQ PESADA",he65:1236,he100:0,headn:822,han:1853,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:382,he100:0,headn:90,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:486,he65:0,he100:0,headn:0,han:126,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:454,he65:0,he100:0,headn:0,han:100,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:538,he65:50,he100:0,headn:50,han:179,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:538,he65:88,he100:0,headn:88,han:172,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:538,he65:42,he100:0,headn:42,han:183,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:538,he65:32,he100:0,headn:32,han:190,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:538,he65:65,he100:0,headn:65,han:175,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:538,he65:56,he100:0,headn:56,han:187,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:538,he65:63,he100:0,headn:63,han:184,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:477,he65:0,he100:0,headn:0,han:357,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:458,he100:0,headn:336,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+  "002548": {mat:"002548",nome:"MIKAEL COSTA ASSUNCAO",funcao:"MEC EQUIP/MAQ PESADA",he65:619,he100:0,headn:0,han:0,faltas:0,atraso:0,dias:[{data:"16/05/2026",dia:"Sabado",hn:0,he65:477,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"17/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"18/05/2026",dia:"Segunda - Feira",hn:535,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"19/05/2026",dia:"Terca - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"20/05/2026",dia:"Quarta - Feira",hn:536,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"21/05/2026",dia:"Quinta - Feira",hn:538,he65:142,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"22/05/2026",dia:"Sexta - Feira",hn:529,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"23/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"24/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"25/05/2026",dia:"Segunda - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"26/05/2026",dia:"Terca - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"27/05/2026",dia:"Quarta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"28/05/2026",dia:"Quinta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"29/05/2026",dia:"Sexta - Feira",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"30/05/2026",dia:"Sabado",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0},{data:"31/05/2026",dia:"Domingo",hn:0,he65:0,he100:0,headn:0,han:0,faltas:0,atraso:0}]},
+};
+
+
+// ==================== CONFIG ====================
+const LIMITE_HE = 40; // horas extras máximas por mês (CLT)
+const LIMITE_WARN = 30; // aviso amarelo
+
+// ==================== STATE ====================
+let DADOS_BRUTOS = [];      // linhas brutas (do sheets ou demo)
+let FUNCIONARIOS = {};      // mapa matricula -> dados agregados
+let filtroStatus = 'todos';
+let filtroColab = '';
+let sortCol = 'total';
+let sortAsc = false;
+let chartHE = null;
+let chartTipo = null;
+let chartAdiantado = null;
+
+// ==================== HELPERS ====================
+function toMin(str) {
+  if (!str || str === '0' || str === '' || str === '0:00') return 0;
+  str = String(str).trim();
+
+  // Formato Google Sheets via Apps Script: "Sat Dec 30 1899 08:20:00 GMT-0234 (...)"
+  // Extrair hora e minuto ANTES do GMT (ignora offset de fuso)
+  if (str.includes('1899') || str.includes('GMT')) {
+    try {
+      const match = str.match(/(\d{1,2}):(\d{2}):(\d{2})\s+GMT/);
+      if (match) {
+        const h = parseInt(match[1]);
+        const m = parseInt(match[2]);
+        if (!isNaN(h) && !isNaN(m)) return h * 60 + m;
+      }
+    } catch(e) { return 0; }
+  }
+
+  // Formato ISO do Google Sheets: "1899-12-30T10:27:00.000Z"
+  if (str.includes('T') && str.includes('-')) {
+    try {
+      const timePart = str.split('T')[1];
+      const parts = timePart.split(':');
+      const h = parseInt(parts[0]);
+      const m = parseInt(parts[1]);
+      return h * 60 + m;
+    } catch(e) { return 0; }
+  }
+
+  // Formato H:MM ou HH:MM (ex: "08:52", "1:30", "10:54")
+  if (str.includes(':')) {
+    const parts = str.split(':');
+    const h = parseInt(parts[0]) || 0;
+    const m = parseInt(parts[1]) || 0;
+    if (isNaN(h) || isNaN(m)) return 0;
+    return h * 60 + m;
+  }
+
+  // Decimal de dia (Excel)
+  const v = parseFloat(str);
+  if (isNaN(v) || v === 0) return 0;
+  if (v < 2) return Math.round(v * 24 * 60);
+  return 0;
+}
+
+function minToHM(min) {
+  if (!min || min <= 0) return '0:00';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return `${h}:${m.toString().padStart(2,'0')}`;
+}
+
+function minToH(min) {
+  return (min / 60).toFixed(1) + 'h';
+}
+
+function statusHE(totalMin) {
+  const h = totalMin / 60;
+  if (h > LIMITE_HE) return 'over';
+  if (h > LIMITE_WARN) return 'warn';
+  return 'ok';
+}
+
+function corStatus(s) {
+  return s === 'over' ? 'var(--red)' : s === 'warn' ? 'var(--yellow)' : 'var(--green)';
+}
+
+function badgeStatus(s) {
+  const m = {over:'b-red',warn:'b-yellow',ok:'b-green'};
+  const t = {over:'Estourou (>40h)',warn:'Atenção (30-40h)',ok:'Dentro do limite'};
+  return `<span class="badge ${m[s]}">${t[s]}</span>`;
+}
+
+function showToast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ==================== PARSEAR DADOS ====================
+function parsearDados(linhas) {
+  // linhas: array de objetos com keys do CSV
+  FUNCIONARIOS = {};
+
+  linhas.forEach(row => {
+    // Suporte tanto ao formato CSV (strings) quanto JSON do Apps Script (valores diretos)
+    const mat = String(row['Matricula'] || row['matricula'] || '').trim().replace(/\.0$/, '');
+    const nome = String(row['Nome'] || row['nome'] || '').trim();
+    const funcao = String(row['Funcao'] || row['Função'] || row['funcao'] || '').trim();
+    // Converter data para DD/MM/YYYY independente do formato recebido
+    let dataRaw = String(row['Data Marcacao'] || row['Data Marcação'] || '').trim();
+    let data = dataRaw;
+    if (dataRaw && !dataRaw.includes('/')) {
+      // Formato: "Mon May 18 2026 00:00:00 GMT-0300..." ou similar
+      try {
+        const d = new Date(dataRaw);
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getUTCDate()).padStart(2,'0');
+          const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+          const yyyy = d.getUTCFullYear();
+          data = dd + '/' + mm + '/' + yyyy;
+        }
+      } catch(e) { data = dataRaw; }
+    }
+    const hn = toMin(row['Horas Normais'] || 0);
+    const he65 = toMin(row['Horas HE 65%'] || 0);
+    const he100 = toMin(row['Horas HE 100%'] || 0);
+    const headn = toMin(row['Horas HE ADN'] || 0);
+    const han = toMin(row['H.Adc.Not'] || row['HAdc.Not'] || 0);
+    const faltas = toMin(row['Faltas'] || 0);
+    const atraso = toMin(row['Atraso'] || 0);
+    const saidaAntec = toMin(row['Saida Antec'] || row['Saída Antec'] || 0);
+    const diaSemana = String(row['Dia da Semana'] || '').trim();
+
+    if (!mat || !nome || mat === 'Matricula') return;
+
+    const ccCod = String(row['Centro de Custo'] || '').trim();
+    const ccDesc = String(row['Desc Centro de Custo'] || '').trim();
+    const cc = ccDesc || ccCod;
+
+    if (!FUNCIONARIOS[mat]) {
+      FUNCIONARIOS[mat] = {
+        mat, nome, funcao, cc, ccCod,
+        hn: 0, he65: 0, he100: 0, headn: 0, han: 0,
+        faltas: 0, atraso: 0, saidaAntec: 0,
+        dias: [], diasTrab: 0, diasHE: 0
+      };
+    }
+
+    const f = FUNCIONARIOS[mat];
+    f.he65 += he65;
+    f.he100 += he100;
+    f.headn += headn;
+    f.han += han;
+    f.hn += hn;
+    f.faltas += faltas;
+    f.atraso += atraso;
+    f.saidaAntec += saidaAntec;
+
+    const totalHEDia = he65 + he100;
+    if (hn > 0) f.diasTrab++;
+    if (totalHEDia > 0) f.diasHE++;
+
+    f.dias.push({ data, diaSemana, hn, he65, he100, headn, han, faltas, atraso });
+  });
+
+  // calcular total HE e status
+  Object.values(FUNCIONARIOS).forEach(f => {
+    f.totalHE = f.he65 + f.he100;
+    f.status = statusHE(f.totalHE);
+    f.saldo = LIMITE_HE * 60 - f.totalHE; // positivo = ainda tem margem
+  });
+}
+
+// ==================== FILTROS ====================
+let FILTRO_FUNCAO = '';
+
+function parseDataBR(str) {
+  if (!str) return null;
+  const [d,m,y] = str.split('/');
+  if (!d||!m||!y) return null;
+  return new Date(y, m-1, d);
+}
+
+function getFuncionariosFiltrados() {
+  const de = document.getElementById('filtro-de')?.value;   // YYYY-MM-DD
+  const ate = document.getElementById('filtro-ate')?.value; // YYYY-MM-DD
+  const cc = document.getElementById('sel-cc')?.value || '';
+
+  const deDate = de ? new Date(de + 'T00:00:00') : null;
+  const ateDate = ate ? new Date(ate + 'T23:59:59') : null;
+  const filtraPeriodo = !!(deDate || ateDate);
+
+  let lista = Object.values(FUNCIONARIOS).map(f => {
+    // Filtro centro de custo
+    if (cc && f.cc !== cc) return null;
+
+    // Filtro período — recalcula totais apenas nos dias do intervalo
+    let dias = f.dias;
+    if (filtraPeriodo) {
+      dias = dias.filter(d => {
+        const dt = parseDataBR(d.data); // DD/MM/YYYY -> Date
+        if (!dt) return true;
+        if (deDate && dt < deDate) return false;
+        if (ateDate && dt > ateDate) return false;
+        return true;
+      });
+    }
+
+    const he65 = dias.reduce((s,d) => s + d.he65, 0);
+    const he100 = dias.reduce((s,d) => s + d.he100, 0);
+    const totalHE = he65 + he100;
+    const totalHEOrig = filtraPeriodo || cc ? totalHE : f.totalHE;
+
+    return {
+      ...f,
+      dias,
+      he65: filtraPeriodo || cc ? he65 : f.he65,
+      he100: filtraPeriodo || cc ? he100 : f.he100,
+      totalHE: totalHEOrig,
+      status: statusHE(totalHEOrig),
+      saldo: LIMITE_HE*60 - totalHEOrig
+    };
+  }).filter(Boolean);
+
+  // Filtros de status, colaborador e função
+  if (filtroStatus !== 'todos') lista = lista.filter(f => f.status === filtroStatus);
+  if (filtroColab) lista = lista.filter(f => f.mat === filtroColab);
+  if (FILTRO_FUNCAO) lista = lista.filter(f => getFuncLabel(f.funcao) === FILTRO_FUNCAO);
+
+  return lista;
+}
+
+function setFiltro(val, btn) {
+  filtroStatus = val;
+  document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  filtroColab = '';
+  FILTRO_FUNCAO = '';
+  document.getElementById('sel-colab').value = '';
+  document.getElementById('perfil-card').classList.remove('on');
+  renderTudo();
+}
+
+function filtrarColab(mat) {
+  filtroColab = mat;
+  FILTRO_FUNCAO = '';
+  if (!mat) {
+    document.getElementById('perfil-card').classList.remove('on');
+    document.getElementById('card-cal').style.display = 'none';
+    renderTudo();
+    return;
+  }
+  renderTudo();
+  renderPerfil(mat);
+}
+
+// ==================== RENDER ====================
+function renderTudo() {
+  popularSelectColab();
+  popularSelectCC();
+  const lista = getFuncionariosFiltrados();
+  renderKPIs(lista);
+  renderRanking(lista);
+  renderAlertas(lista);
+  renderChartHE(lista);
+  renderChartTipo(lista);
+  renderTabela(lista);
+  renderChartAdiantado(lista);
+}
+
+function popularSelectCC() {
+  const sel = document.getElementById('sel-cc');
+  if (!sel) return;
+  const antigo = sel.value;
+  const ccs = [...new Set(Object.values(FUNCIONARIOS).map(f => f.cc).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todos</option>' + ccs.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = antigo;
+}
+
+function popularSelectColab() {
+  const sel = document.getElementById('sel-colab');
+  const antigo = sel.value;
+  sel.innerHTML = '<option value="">Todos</option>';
+  Object.values(FUNCIONARIOS)
+    .sort((a,b) => a.nome.localeCompare(b.nome))
+    .forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.mat;
+      opt.textContent = f.nome.split(' ').slice(0,3).join(' ');
+      sel.appendChild(opt);
+    });
+  sel.value = antigo;
+}
+
+function renderKPIs(lista) {
+  const total = lista.length;
+  const overAll = lista.filter(f => f.status === 'over').length;
+  const warnAll = lista.filter(f => f.status === 'warn').length;
+  const totalHEMin = lista.reduce((s, f) => s + f.totalHE, 0);
+
+  document.getElementById('k-total').textContent = total;
+  document.getElementById('k-over').textContent = overAll;
+  document.getElementById('k-warn').textContent = warnAll;
+  document.getElementById('k-total-he').textContent = minToH(totalHEMin);
+  document.getElementById('k-total-he-sub').textContent = `${lista.length} func. exibidos`;
+
+  // badge header
+  const badge = document.getElementById('hbadge');
+  if (overAll > 0) {
+    badge.textContent = `${overAll} estouro(s) de HE`;
+    badge.style.background = 'rgba(220,38,38,.3)';
+    badge.style.borderColor = 'rgba(220,38,38,.5)';
+  } else {
+    badge.textContent = `Dentro do limite`;
+    badge.style.background = 'rgba(5,150,105,.3)';
+    badge.style.borderColor = 'rgba(5,150,105,.5)';
+  }
+}
+
+function renderRanking(lista) {
+  const wrap = document.getElementById('ranking-he');
+  const top = [...lista].sort((a,b) => b.totalHE - a.totalHE).slice(0, 10);
+
+  if (!top.length) {
+    wrap.innerHTML = emptyState('Sem dados para exibir.');
+    return;
+  }
+
+  wrap.innerHTML = top.map((f, i) => {
+    const st = f.status;
+    const cls = st === 'over' ? 'over' : st === 'warn' ? 'warn' : 'ok';
+    const pct = Math.min((f.totalHE / (LIMITE_HE * 60)) * 100, 100);
+    return `<div class="rank-item" onclick="filtrarColab('${f.mat}')" style="cursor:pointer" title="Clique para ver detalhes">
+      <div class="rank-n ${cls}">${i + 1}</div>
+      <div class="rank-info">
+        <div class="rank-nome">${f.nome.split(' ').slice(0,3).join(' ')}</div>
+        <div class="rank-func">${f.funcao}</div>
+        <div class="sbw" style="width:100%;margin-right:0;margin-top:4px;height:4px">
+          <span class="sb ${st==='over'?'sb-r':st==='warn'?'sb-y':'sb-g'}" style="width:${pct}%"></span>
+        </div>
+      </div>
+      <div class="rank-he" style="color:${corStatus(st)}">${minToHM(f.totalHE)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlertas(lista) {
+  renderFuncoes(lista);
+}
+
+function getFuncLabel(funcRaw) {
+  const r = (funcRaw || '').trim().toUpperCase();
+  if (r.includes('MEC EQUIP') || r.includes('MEC EQUIP/MAQ')) return 'Mecânico';
+  if (r.includes('ELET EQ') || r.includes('ELETRICISTA')) return 'Eletricista';
+  if (r.includes('BORRACHEIRO')) return 'Borracheiro';
+  if (r.includes('LAVADOR')) return 'Lavador';
+  if (r.includes('LUBRIFICADOR')) return 'Lubrificador';
+  if (r.includes('SOLDADOR')) return 'Soldador';
+  if (r.includes('TEC SEG') || r.includes('SEG DO TRAB')) return 'Téc. Segurança';
+  if (r.includes('PLANEJ')) return 'Planejamento';
+  if (r.includes('ENC DE MEC')) return 'Encarregado';
+  if (r.includes('OP MANUTEN')) return 'Op. Manutenção';
+  if (r.includes('TORNEIRO')) return 'Torneiro';
+  return funcRaw || 'Outros';
+}
+
+function renderFuncoes(lista) {
+  const wrap = document.getElementById('funcoes-painel');
+  if (!wrap) return;
+
+  const grupos = {};
+  lista.forEach(f => {
+    const label = getFuncLabel(f.funcao);
+    if (!grupos[label]) grupos[label] = 0;
+    grupos[label]++;
+  });
+
+  const sortedGrupos = Object.entries(grupos).sort((a,b) => b[1] - a[1]);
+
+  wrap.innerHTML = '<div class="alerta-grid">' + sortedGrupos.map(([func, qtd]) => {
+    return `<div class="alerta-item warn" onclick="filtrarPorFuncao('${func}')" style="cursor:pointer">
+      <div style="flex:1;min-width:0">
+        <div class="alerta-func">${func}</div>
+        <div class="alerta-he">Clique para filtrar</div>
+        <div class="alerta-bar-wrap">
+          <div class="alerta-bar-fill" style="width:100%;background:var(--roxo)"></div>
+        </div>
+      </div>
+      <div class="alerta-val warn" style="color:var(--roxo)">${qtd}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function filtrarPorFuncao(funcLabel) {
+  FILTRO_FUNCAO = funcLabel;
+  renderTudo();
+}
+
+function renderChartAdiantado(lista) {
+  const ctx = document.getElementById('chart-adiantado');
+  if (!ctx) return;
+  if (chartAdiantado) chartAdiantado.destroy();
+
+  // Para cada funcionário, contar dias com HE 65% entre 5min e 29min
+  const dados = lista.map(f => {
+    const diasAdiantado = f.dias.filter(d => d.he65 >= 5 && d.he65 <= 29).length;
+    return { nome: f.nome.split(' ').slice(0,2).join(' '), dias: diasAdiantado };
+  }).filter(d => d.dias > 0).sort((a,b) => b.dias - a.dias);
+
+  if (!dados.length) {
+    ctx.getContext('2d');
+    chartAdiantado = new Chart(ctx.getContext('2d'), {
+      type: 'bar',
+      data: { labels: ['Sem ocorrências'], datasets: [{ data: [0], backgroundColor: '#e5e7eb' }] },
+      options: { plugins: { legend: { display: false } } }
+    });
+    return;
+  }
+
+  chartAdiantado = new Chart(ctx.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: dados.map(d => d.nome),
+      datasets: [{
+        label: 'Dias com ponto adiantado (5–29 min)',
+        data: dados.map(d => d.dias),
+        backgroundColor: '#f59e0b',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Barlow', size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: v => `${v.raw} dia(s) adiantado` } }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f3f0f8' }, border: { display: false } },
+        x: { grid: { display: false }, border: { display: false } }
+      }
+    }
+  });
+}
+
+function renderChartHE(lista) {
+  const ctx = document.getElementById('chart-he').getContext('2d');
+  if (chartHE) chartHE.destroy();
+
+  const sorted = [...lista].sort((a,b) => b.totalHE - a.totalHE).slice(0, 15);
+  const labels = sorted.map(f => f.nome.split(' ')[0] + ' ' + (f.nome.split(' ')[1]?.[0] || '') + '.');
+  const values65 = sorted.map(f => f.he65);   // em minutos
+  const values100 = sorted.map(f => f.he100);  // em minutos
+  // HE ADN removido do gráfico
+  const limiteLine = sorted.map(() => LIMITE_HE * 60); // 40h em minutos
+
+  chartHE = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'HE 65%', data: values65, backgroundColor: '#7B2FBE', borderRadius: 4, stack: 'he' },
+        { label: 'HE 100%', data: values100, backgroundColor: '#dc2626', borderRadius: 4, stack: 'he' },
+        { label: 'Limite 40h', data: limiteLine, type: 'line', borderColor: '#dc2626', borderDash: [5,5], borderWidth: 2, pointRadius: 0, fill: false, stack: undefined }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Barlow', size: 11 }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: v => {
+              if (v.dataset.label === 'Limite 40h') return `Limite: 40:00`;
+              const raw = v.raw; // já em minutos
+              const h = Math.floor(raw/60); const m = raw%60;
+              return `${v.dataset.label}: ${h}:${String(m).padStart(2,'0')}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          stacked: true,
+          ticks: { callback: v => { const h=Math.floor(v/60); const m=v%60; return h+':'+(m?String(m).padStart(2,'0'):'00'); } },
+          grid: { color: '#f3f0f8' },
+          border: { display: false }
+        },
+        x: { stacked: true, grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } }
+      }
+    }
+  });
+}
+
+function renderChartTipo(lista) {
+  const ctx = document.getElementById('chart-tipo').getContext('2d');
+  if (chartTipo) chartTipo.destroy();
+
+  const tot65m = lista.reduce((s,f) => s + f.he65, 0);
+  const tot100m = lista.reduce((s,f) => s + f.he100, 0);
+  function fmtMin(m){const h=Math.floor(m/60);const mn=m%60;return h+':'+String(mn).padStart(2,'0');}
+
+  chartTipo = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['HE 65%', 'HE 100%'],
+      datasets: [{
+        data: [tot65m, tot100m],
+        backgroundColor: ['#7B2FBE', '#dc2626'],
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'Barlow', size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: v => `${v.label}: ${fmtMin(v.raw)}` } }
+      }
+    }
+  });
+}
+
+function renderTabela(lista) {
+  const tbody = document.getElementById('tbody-principal');
+
+  const sorted = [...lista].sort((a, b) => {
+    let va = a[sortCol === 'nome' ? 'nome' : sortCol === 'funcao' ? 'funcao' : sortCol];
+    let vb = b[sortCol === 'nome' ? 'nome' : sortCol === 'funcao' ? 'funcao' : sortCol];
+    if (typeof va === 'string') return sortAsc ? va.localeCompare(vb) : vb.localeCompare(va);
+    return sortAsc ? va - vb : vb - va;
+  });
+
+  if (!sorted.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--muted)">Nenhum dado encontrado</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = sorted.map(f => {
+    const st = f.status;
+    const rowCls = st === 'over' ? 'row-over' : st === 'warn' ? 'row-warn' : '';
+    const saldoMin = f.saldo;
+    const saldoTxt = saldoMin >= 0 ? `<span style="color:var(--green)">+${minToH(saldoMin)}</span>` : `<span style="color:var(--red);font-weight:600">-${minToH(-saldoMin)}</span>`;
+    const pct = Math.min((f.totalHE / (LIMITE_HE * 60)) * 100, 100);
+    const sbCls = st === 'over' ? 'sb-r' : st === 'warn' ? 'sb-y' : 'sb-g';
+    return `<tr class="${rowCls}" onclick="filtrarColab('${f.mat}')" style="cursor:pointer">
+      <td><strong>${f.nome.split(' ').slice(0,3).join(' ')}</strong><br><span style="font-size:10px;color:var(--muted)">${f.mat}</span></td>
+      <td><span style="font-size:11px;color:var(--muted)">${f.funcao}</span></td>
+      <td>${minToHM(f.he65)}</td>
+      <td>${minToHM(f.he100)}</td>
+      <td>${minToHM(f.han)}</td>
+      <td>
+        <span class="sbw"><span class="sb ${sbCls}" style="width:${pct}%"></span></span>
+        <strong style="color:${corStatus(st)}">${minToHM(f.totalHE)}</strong>
+      </td>
+      <td>${saldoTxt}</td>
+      <td>${f.faltas > 0 ? `<span style="color:var(--red)">${minToHM(f.faltas)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+      <td>${badgeStatus(st)}</td>
+    </tr>`;
+  }).join('');
+}
+
+let sortDir = { nome:true, funcao:true, he65:false, he100:false, hen:false, total:false, saldo:false, faltas:false };
+function sortTabela(col) {
+  // mapear col para campo
+  const map = { he65:'he65', he100:'he100', hen:'han', total:'totalHE', saldo:'saldo', faltas:'faltas', nome:'nome', funcao:'funcao' };
+  sortCol = map[col] || col;
+  sortDir[col] = !sortDir[col];
+  sortAsc = sortDir[col];
+  document.querySelectorAll('thead th').forEach(th => th.classList.remove('sorted'));
+  event.currentTarget.classList.add('sorted');
+  renderTabela(getFuncionariosFiltrados());
+}
+
+// ==================== PERFIL COLABORADOR ====================
+function renderPerfil(mat) {
+  const f = FUNCIONARIOS[mat];
+  if (!f) return;
+
+  const card = document.getElementById('perfil-card');
+  const initials = f.nome.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('perfil-avatar').textContent = initials;
+  document.getElementById('perfil-nome').textContent = f.nome;
+  document.getElementById('perfil-sub').textContent = `${f.funcao} · Mat. ${f.mat}`;
+  document.getElementById('perfil-he-total').textContent = minToHM(f.totalHE);
+  document.getElementById('perfil-status-badge').innerHTML = badgeStatus(f.status);
+
+  // stats grid
+  const saldoMin = f.saldo;
+  const pctLimite = Math.min(((f.totalHE / (LIMITE_HE * 60)) * 100), 999).toFixed(0);
+  document.getElementById('perfil-grid').innerHTML = `
+    <div class="perfil-stat">
+      <div class="perfil-stat-lbl">HE 65%</div>
+      <div class="perfil-stat-val">${minToHM(f.he65)}</div>
+      <div class="perfil-stat-sub">horas extras normais</div>
+    </div>
+    <div class="perfil-stat">
+      <div class="perfil-stat-lbl">HE 100%</div>
+      <div class="perfil-stat-val">${minToHM(f.he100)}</div>
+      <div class="perfil-stat-sub">DSR / feriado</div>
+    </div>
+    <div class="perfil-stat">
+      <div class="perfil-stat-lbl">H. Noturna</div>
+      <div class="perfil-stat-val">${minToHM(f.han)}</div>
+      <div class="perfil-stat-sub">adicional noturno</div>
+    </div>
+    <div class="perfil-stat" style="${saldoMin < 0 ? 'background:rgba(220,38,38,.3)' : ''}">
+      <div class="perfil-stat-lbl">${saldoMin < 0 ? 'Excesso' : 'Saldo Limite'}</div>
+      <div class="perfil-stat-val">${saldoMin < 0 ? '+' + minToH(-saldoMin) : minToH(saldoMin)}</div>
+      <div class="perfil-stat-sub">${pctLimite}% do limite usado</div>
+    </div>
+  `;
+
+  // dias com HE
+  const diasHE = f.dias.filter(d => d.he65 + d.he100 + d.headn > 0);
+  const diasHtml = diasHE.length ? diasHE.map(d =>
+    `<span class="dia-chip he" title="${d.diaSemana}">${d.data.slice(0,5)} (${minToHM(d.he65+d.he100+d.headn)})</span>`
+  ).join('') : '<span style="font-size:12px;color:rgba(255,255,255,.5)">Nenhum dia com HE registrado</span>';
+
+  document.getElementById('perfil-dias').innerHTML = `
+    <div class="perfil-dias-title">Dias com horas extras (${diasHE.length} dias)</div>
+    <div class="perfil-dias-list">${diasHtml}</div>
+  `;
+
+  card.classList.add('on');
+
+  // Calendário
+  renderCalendario(mat);
+}
+
+function renderCalendario(mat) {
+  const f = FUNCIONARIOS[mat];
+  if (!f) return;
+
+  const card = document.getElementById('card-cal');
+  const content = document.getElementById('cal-content');
+  document.getElementById('cal-title').textContent = `Calendário de Marcações — ${f.nome.split(' ').slice(0,2).join(' ')}`;
+
+  // Respeitar filtro de período
+  const de = document.getElementById('filtro-de')?.value;
+  const ate = document.getElementById('filtro-ate')?.value;
+  const deDate = de ? new Date(de + 'T00:00:00') : null;
+  const ateDate = ate ? new Date(ate + 'T23:59:59') : null;
+
+  const diasFiltrados = f.dias.filter(d => {
+    if (!deDate && !ateDate) return true;
+    const dt = parseDataBR(d.data);
+    if (!dt) return true;
+    if (deDate && dt < deDate) return false;
+    if (ateDate && dt > ateDate) return false;
+    return true;
+  });
+
+  // agrupar por mês
+  const meses = {};
+  diasFiltrados.forEach(d => {
+    if (!d.data) return;
+    const parts = d.data.split('/');
+    const key = parts[1] + '/' + parts[2]; // MM/YYYY
+    if (!meses[key]) meses[key] = [];
+    meses[key].push(d);
+  });
+
+  let html = '';
+  Object.entries(meses).forEach(([mesAno, dias]) => {
+    const [mes, ano] = mesAno.split('/');
+    const nomeMes = new Date(ano, mes-1, 1).toLocaleDateString('pt-BR', {month:'long', year:'numeric'});
+    const primeiroDia = new Date(ano, mes-1, 1).getDay(); // 0=dom
+
+    html += `<div style="margin-bottom:20px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--roxo);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">${nomeMes}</div>
+      <div class="cal-wrap">
+        <div class="cal-header">Dom</div><div class="cal-header">Seg</div>
+        <div class="cal-header">Ter</div><div class="cal-header">Qua</div>
+        <div class="cal-header">Qui</div><div class="cal-header">Sex</div>
+        <div class="cal-header">Sáb</div>`;
+
+    // células vazias no início
+    for (let i = 0; i < primeiroDia; i++) html += `<div class="cal-day empty"></div>`;
+
+    // preencher dias
+    const diasDoMes = new Date(ano, mes, 0).getDate();
+    for (let d = 1; d <= diasDoMes; d++) {
+      const dStr = `${d.toString().padStart(2,'0')}/${mes}/${ano}`;
+      const dia = dias.find(x => x.data === dStr);
+      const dow = new Date(ano, mes-1, d).getDay();
+      const isFds = dow === 0 || dow === 6;
+
+      let cls = 'empty', title = d;
+      if (dia) {
+        const heTotal = dia.he65 + dia.he100 + dia.headn;
+        if (dia.hn === 0 && !isFds) cls = 'falta';
+        else if (isFds && dia.hn === 0) cls = 'fds';
+        else if (heTotal > 0 && heTotal >= 60) cls = 'he-over';
+        else if (heTotal > 0) cls = 'he';
+        else if (isFds) cls = 'fds';
+        else cls = 'normal';
+
+        const tt = dia ? `Entrada:${dia.he65>0?minToHM(dia.he65):'—'} HE65%·${dia.he100>0?minToHM(dia.he100):'—'} HE100%` : '';
+        html += `<div class="cal-day ${cls}" title="${tt}">${d}</div>`;
+      } else {
+        cls = isFds ? 'fds' : 'empty';
+        html += `<div class="cal-day ${cls}">${d}</div>`;
+      }
+    }
+    html += `</div>
+      <div class="cal-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:#bbf7d0;border:1px solid #6ee7b7"></div> Dia normal</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#fde68a;border:1px solid #fbbf24"></div> Com HE</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#d1d5db;border:1px solid #9ca3af"></div> HE alta (≥1h)</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#fca5a5;border:1px solid #f87171"></div> Falta/ausente</div>
+        <div class="leg-item"><div class="leg-dot" style="background:#ede9fe;border:1px solid #c4b5fd"></div> Fim de semana</div>
+      </div>
+    </div>`;
+  });
+
+  content.innerHTML = html;
+  card.style.display = 'block';
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function emptyState(msg) {
+  return `<div class="empty-state"><div class="empty-icon">📭</div><div>${msg}</div></div>`;
+}
+
+// ==================== CARREGAR GOOGLE SHEETS ====================
+// Leitura de arquivo local .xlsx
+function carregarArquivo(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const btn = document.getElementById('btn-atualizar');
+  const status = document.getElementById('cfg-status');
+  const ultima = document.getElementById('cfg-ultima');
+
+  btn.disabled = true;
+  status.className = 'cfg-status cfg-loading';
+  status.textContent = '⏳ Lendo arquivo...';
+  status.style.display = 'inline-block';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+
+      // Pega a primeira aba (ou a aba 1-Marcacoes se existir)
+      const sheetName = workbook.SheetNames.find(n => n.includes('Marcac')) || workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+
+      // Converte para array de objetos
+      const linhas = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+      if (!linhas || linhas.length < 2) throw new Error('Planilha vazia ou sem dados');
+
+      // Normalizar chaves (remover espaços extras)
+      const linhasNorm = linhas.map(row => {
+        const obj = {};
+        Object.entries(row).forEach(([k, v]) => { obj[k.trim()] = v; });
+        return obj;
+      });
+
+      DADOS_BRUTOS = linhasNorm;
+      parsearDados(linhasNorm);
+      renderTudo();
+
+      status.className = 'cfg-status cfg-ok';
+      status.textContent = `✅ ${Object.keys(FUNCIONARIOS).length} funcionários`;
+      const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+      ultima.textContent = `${file.name} · Carregado às ${agora}`;
+      showToast(`✅ ${Object.keys(FUNCIONARIOS).length} funcionários carregados!`);
+    } catch(err) {
+      status.className = 'cfg-status cfg-err';
+      status.textContent = '❌ Erro ao ler arquivo';
+      ultima.textContent = err.message;
+      showToast('Erro ao ler o arquivo: ' + err.message, 5000);
+      console.error(err);
+    } finally {
+      btn.disabled = false;
+      input.value = ''; // reset pra permitir recarregar o mesmo arquivo
+    }
+  };
+  reader.onerror = () => {
+    status.className = 'cfg-status cfg-err';
+    status.textContent = '❌ Erro ao ler arquivo';
+    btn.disabled = false;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// Manter função vazia pra não quebrar chamadas existentes
+const APPS_URL = 'https://script.google.com/macros/s/AKfycbzZPRr9FRLqJPbEBQioRSU8GkROXIMKk-I96yBN7kWDr2VQ6fXxxHofuTbbcXRsBPlYVQ/exec';
+
+function carregarSheets() {
+  const btn = document.getElementById('btn-atualizar');
+  const status = document.getElementById('cfg-status');
+  const ultima = document.getElementById('cfg-ultima');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Atualizando...';
+  status.className = 'cfg-status cfg-loading';
+  status.textContent = '⏳ Buscando dados...';
+  status.style.display = 'inline-block';
+
+  // Remove script JSONP anterior se existir
+  const old = document.getElementById('jsonp-script');
+  if (old) old.remove();
+
+  // Callback global que o Apps Script vai chamar
+  window._jsonpCallback = function(json) {
+    try {
+      if (json.status !== 'ok') throw new Error(json.message || 'Resposta inválida');
+      const linhas = json.data;
+      if (!linhas || linhas.length < 2) throw new Error('Planilha vazia ou sem dados');
+
+      DADOS_BRUTOS = linhas;
+      parsearDados(linhas);
+
+      // Preencher período ANTES de renderizar
+      const filtroDE = document.getElementById('filtro-de');
+      const filtroATE = document.getElementById('filtro-ate');
+      if (!filtroDE.value && !filtroATE.value) {
+        const hoje = new Date();
+        const dia = hoje.getDate();
+        const inicioCiclo = dia >= 16
+          ? new Date(hoje.getFullYear(), hoje.getMonth(), 16)
+          : new Date(hoje.getFullYear(), hoje.getMonth() - 1, 16);
+
+        // Última data real da base
+        let ultimaData = null;
+        Object.values(FUNCIONARIOS).forEach(f => {
+          f.dias.forEach(d => {
+            if (!d.data) return;
+            const dt = parseDataBR(d.data);
+            if (dt && (!ultimaData || dt > ultimaData)) ultimaData = dt;
+          });
+        });
+
+        const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        filtroDE.value = fmt(inicioCiclo);
+        filtroATE.value = ultimaData ? fmt(ultimaData) : fmt(new Date(hoje.getFullYear(), hoje.getMonth() + (dia >= 16 ? 1 : 0), 15));
+      }
+
+      renderTudo();
+
+      status.className = 'cfg-status cfg-ok';
+      status.textContent = '✅ ' + Object.keys(FUNCIONARIOS).length + ' funcionários';
+      const agora = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+      ultima.textContent = 'Última atualização: ' + agora;
+      showToast('✅ Dados atualizados — ' + Object.keys(FUNCIONARIOS).length + ' funcionários!');
+    } catch(e) {
+      status.className = 'cfg-status cfg-err';
+      status.textContent = '❌ Erro ao carregar';
+      ultima.textContent = e.message;
+      showToast('❌ Erro: ' + e.message, 5000);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Atualizar Dados';
+    }
+  };
+
+  // Injeta script JSONP
+  const script = document.createElement('script');
+  script.id = 'jsonp-script';
+  script.src = APPS_URL + '?callback=_jsonpCallback';
+  script.onerror = function() {
+    status.className = 'cfg-status cfg-err';
+    status.textContent = '❌ Erro ao carregar';
+    ultima.textContent = 'Verifique sua conexão com a internet';
+    showToast('❌ Não foi possível conectar ao servidor', 5000);
+    btn.disabled = false;
+    btn.textContent = '🔄 Atualizar Dados';
+  };
+  document.head.appendChild(script);
+}
+
+function parseCSV(text) {
+  const linhas = text.split('\n').filter(l => l.trim());
+  if (!linhas.length) return [];
+
+  // detectar separador
+  const sep = linhas[0].includes('\t') ? '\t' : ',';
+  const headers = splitCSVLine(linhas[0], sep);
+  const resultado = [];
+
+  for (let i = 1; i < linhas.length; i++) {
+    const cols = splitCSVLine(linhas[i], sep);
+    if (!cols.length || cols.every(c => !c.trim())) continue;
+    const obj = {};
+    headers.forEach((h, idx) => { obj[h.trim()] = (cols[idx] || '').trim(); });
+    resultado.push(obj);
+  }
+  return resultado;
+}
+
+function splitCSVLine(line, sep) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === sep && !inQ) { result.push(cur); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+// ==================== DADOS DEMO ====================
+function usarDadosDemo() {
+  const status = document.getElementById('cfg-status');
+  status.className = 'cfg-status cfg-ok';
+  status.textContent = '✅ Dados reais — ALBRÁS 16-30/05/2026';
+  status.style.display = 'inline-block';
+
+  FUNCIONARIOS = {};
+  Object.values(DADOS_REAIS).forEach(f => {
+    const totalHE = f.he65 + f.he100 + f.headn;
+    FUNCIONARIOS[f.mat] = {
+      mat: f.mat,
+      nome: f.nome,
+      funcao: f.funcao,
+      he65: f.he65,
+      he100: f.he100,
+      headn: f.headn,
+      han: f.han,
+      faltas: f.faltas,
+      atraso: f.atraso,
+      totalHE,
+      saldo: LIMITE_HE * 60 - totalHE,
+      status: statusHE(totalHE),
+      diasTrab: f.dias.filter(d => d.hn > 0).length,
+      diasHE: f.dias.filter(d => d.he65+d.he100+d.headn > 0).length,
+      dias: f.dias
+    };
+  });
+
+  renderTudo();
+  showToast('📊 Dados reais ALBRÁS carregados — 40 funcionários!');
+}
+
+// ==================== INIT ====================
+const d = new Date();
+document.getElementById('hdate').textContent = d.toLocaleDateString('pt-BR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+
+// Mostrar dados embutidos ao abrir
+carregarSheets();
+</script>
+</body>
+</html>
